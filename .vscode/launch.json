@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Lighthouse",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/lighthouse/main.go",  // your main package
+      "cwd": "${workspaceFolder}",                          // 👈 force working dir = repo root
+      "env": {
+        "ENVIRONMENT": "dev"
+      }
+    }
+  ]
+}
