@@ -5,14 +5,40 @@ import (
 	"os"
 	"strings"
 
+	"github.com/LSariol/LightHouse/internal/docker"
 	"github.com/LSariol/LightHouse/internal/models"
 )
 
+type Builder struct {
+	Paths         Paths
+	DockerHandler *docker.Handler
+}
+
+type Paths struct {
+	Original string
+	Download string
+	Staging  string
+}
+
+func NewBuilder(dh *docker.Handler) *Builder {
+	return &Builder{
+		DockerHandler: dh,
+	}
+}
+
 func Build(repo models.WatchedRepo) (models.WatchedRepo, error) {
+
 	fmt.Println("----Building " + repo.Name + " ----")
 
+	err := cleanUp()
+	if err != nil {
+		wError := "Cleaning Failed for " + repo.Name + " " + err.Error()
+		fmt.Println(wError)
+		return repo, err
+	}
+
 	// Prepare Repo for build
-	err := downloadNewCommit(repo.DownloadURL, repo.Name)
+	err = downloadNewCommit(repo.DownloadURL, repo.Name)
 	if err != nil {
 		wError := "Download Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
@@ -81,6 +107,8 @@ func InitilizeContainers(watchList []models.WatchedRepo) error {
 	return nil
 }
 
-func InitilizeOriginalPath() {
-	OriginalPath, _ = os.Getwd()
+func InitilizeOriginalPath() string {
+	originalPath, _ := os.Getwd()
+
+	return originalPath
 }

@@ -1,6 +1,26 @@
+name: lighthouse
+
 services:
-  Lighthouse:
-    image: Lighthouse
+  cove:
+    build:                      
+      context: .
+      dockerfile: Dockerfile
+      environment:
+        - COVE_PORT=2100
+    container_name: lighthouse
+    ports:
+      - "2000:2000"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - type: bind
+        source: C:/Users/Lu/Server/Storage/lighthouse/.env
+        target: /app/vault/.env
+        read_only: true
+    stdin_open: true  # keeps STD open for the CLI
+    tty: true         # allocates a pseudo-TTY so you can interact
     restart: unless-stopped
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO-", "http://localhost:2000/health"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 10
+    #   start_period: 5s

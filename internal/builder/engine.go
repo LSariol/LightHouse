@@ -1,7 +1,10 @@
 package builder
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,12 +14,12 @@ import (
 	"strings"
 
 	"github.com/LSariol/LightHouse/internal/models"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 )
 
-var SPath = "../../Server"
-var DownloadPath = "../../Server/Download"
-var StagingPath = "../../Server/Staging"
-var StoragePath = "../../Server/Storage"
+var DownloadPath = "C:/Users/Lu/Server/Download"
+var StagingPath = "C:/Users/Lu/Server/Staging"
 var OriginalPath = ""
 
 func downloadNewCommit(URL string, projectName string) error {
@@ -120,48 +123,87 @@ func unpackNewProject(projectName string) error {
 }
 
 func buildDockerImage(projectName string) error {
+
+	ctx := context.Background()
+
 	buildPath := filepath.Join(StagingPath, projectName+"-main")
 
-	// Change to the target build directory
-	if err := os.Chdir(buildPath); err != nil {
-		return fmt.Errorf("failed to change to build directory: %v", err)
+	tarBuf := new(bytes.Buffer)
+	tw := tar.NewWriter(tarBuf)
+	err := filepath.Walk(buildPath, func(file string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Open files for reading
+		if fi.Mode().IsRegular() {
+			relPath, err := filepath.Rel(buildPath, file)
+			if err != nil {
+				return err
+			}
+			header, err := tar.FileInfoHeader(fi, "")
+			if err != nil {
+				return err
+			}
+			header.Name = relPath
+
+			if err := tw.WriteHeader(header); err != nil {
+				return err
+			}
+
+			f, err := os.Open(file)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create build tar: %v", err)
 	}
 
-	// Create the docker build command
-	buildCmd := exec.Command("docker", "build", "-t", projectName, ".")
+	if err := tw.Close(); err != nil {
+		return err
+	}
 
-	// Attach terminal output
-	buildCmd.Stdout = os.Stdout
-	buildCmd.Stderr = os.Stderr
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return fmt.Errorf("failed to create docker client: %v", err)
+	}
 
-	// Run the build command
-	if err := buildCmd.Run(); err != nil {
-		return fmt.Errorf("failed to build docker image for '%s': %v", projectName, err)
+	buildOpts := types.ImageBuildOptions{
+		Tags:       []string{projectName},
+		Remove:     true,
+		Dockerfile: "Dockerfile",
+	}
+
+	buildResp, err := cli.ImageBuild(ctx, bytes.NewReader(tarBuf.Bytes()), buildOpts)
+	if err != nil {
+		return fmt.Errorf("failed to build docker image: %v", err)
+	}
+	defer buildResp.Body.Close()
+
+	_, err = io.Copy(os.Stdout, buildResp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read build response: %v", err)
 	}
 
 	fmt.Printf("Docker image for %s built successfully.\n", projectName)
+
 	return nil
 }
 
 func startDockerContainer(projectName string) error {
-	// Step 2: Remove any old container
-	exec.Command("docker", "rm", "-f", projectName).Run()
-
-	switch projectName {
-	case "cove":
-		err := startCoveContainer(projectName)
-		if err != nil {
-			return err
-		}
-		return nil
-
-	case "other":
-
-		return nil
-
-	default:
-		return fmt.Errorf("no container with this name exists")
-	}
+	cmd := exec.Command("docker", "compose", "up", "-d", "--build", "--remove-orphans")
+	cmd.Dir = "C:/Users/Lu/Server/Staging/Cove-main" // <- relative paths in compose resolve here
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	return cmd.Run()
 }
 
 func cleanUp() error {

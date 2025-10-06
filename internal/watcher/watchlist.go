@@ -1,4 +1,4 @@
-package scanner
+package watcher
 
 import (
 	"encoding/json"
@@ -10,39 +10,35 @@ import (
 	"github.com/LSariol/LightHouse/internal/models"
 )
 
-var WatchList []models.WatchedRepo
-
-func AddNewRepo(name string, url string) ([]models.WatchedRepo, error) {
-	var watchList []models.WatchedRepo = readWatchList()
+func (w *Watcher) addNewRepo(name string, url string) error {
 
 	// Check if new repo is already being watched
-	exists, conflictVal, conflictType := repoExists(watchList, name, url)
+	exists, conflictVal, conflictType := w.repoExists(name, url)
 	if exists {
 		fmt.Printf("Conflict detected: %s is already in use as a %s\n", conflictVal, conflictType)
-		return watchList, nil
+		return nil
 	}
 
 	apiURL, downloadURL, err := getURLs(url)
 	if err != nil {
-		return watchList, err
+		return err
 	}
 
 	newRepo := models.NewWatchedRepo(name, url, apiURL, downloadURL)
 
-	watchList = append(watchList, newRepo)
+	w.WatchList = append(w.WatchList, newRepo)
 
-	storeWatchList(watchList)
+	w.storeWatchList()
 
-	return watchList, nil
+	return nil
 
 }
 
-func RemoveRepo(toRemove string) []models.WatchedRepo {
-	watchList := readWatchList()
+func (w *Watcher) removeRepo(toRemove string) {
 
 	indexToRemove := -1
 
-	for index, existingRepo := range watchList {
+	for index, existingRepo := range w.WatchList {
 		if existingRepo.Name == toRemove {
 			indexToRemove = index
 			break
@@ -50,85 +46,83 @@ func RemoveRepo(toRemove string) []models.WatchedRepo {
 	}
 
 	if indexToRemove != -1 {
-		watchList = append(watchList[:indexToRemove], watchList[indexToRemove+1:]...)
+		w.WatchList = append(w.WatchList[:indexToRemove], w.WatchList[indexToRemove+1:]...)
 		fmt.Println("Watcher - RemoveFromWatchList: " + toRemove + " has been removed.")
-		storeWatchList(watchList)
-		return watchList
+		w.storeWatchList()
+		return
 	}
-	fmt.Println("Watcher - RemoveFromWatchList: Unable to remove " + toRemove + ".")
 
-	return watchList
+	fmt.Println("Watcher - RemoveFromWatchList: Unable to remove " + toRemove + ".")
+	return
 
 }
 
-func changeRepoName(currentName string, name string) ([]models.WatchedRepo, error) {
-	watchList := readWatchList()
+func (w *Watcher) changeRepoName(currentName string, name string) error {
 	updated := false
 
-	if checkNamingConflicts(name, currentName, watchList) {
-		return watchList, fmt.Errorf("This name is already being used to watch a different repo.")
+	if w.checkNamingConflicts(name, currentName) {
+		return fmt.Errorf("This name is already being used to watch a different repo.")
 	}
 
-	for i := range watchList {
-		if watchList[i].Name == currentName {
-			watchList[i].Name = name
+	for i := range w.WatchList {
+		if w.WatchList[i].Name == currentName {
+			w.WatchList[i].Name = name
 			lastModified := time.Now()
-			watchList[i].Stats.Meta.LastModifiedAt = &lastModified
+			w.WatchList[i].Stats.Meta.LastModifiedAt = &lastModified
 			updated = true
 			break
 		}
 	}
 
 	if !updated {
-		return nil, fmt.Errorf("Lighthouse - UpdateRepo: Unable to update " + currentName + ". Does not exist.")
+		return fmt.Errorf("changeRepoName: " + currentName + " does not exist.")
 	}
 
-	storeWatchList(watchList)
+	w.storeWatchList()
 
-	return watchList, nil
+	return nil
 }
 
-func changeRepoURL(name string, newURL string) ([]models.WatchedRepo, error) {
-	watchList := readWatchList()
+func (w *Watcher) changeRepoURL(name string, newURL string) error {
 	updated := false
 
-	if checkURLConflicts(name, newURL, watchList) {
-		return watchList, fmt.Errorf("This url is already being watched under a different name.")
+	if w.checkURLConflicts(name, newURL) {
+		return fmt.Errorf("This url is already being watched under a different name.")
 	}
 
-	for i := range watchList {
-		if watchList[i].Name == name {
+	for i := range w.WatchList {
+		if w.WatchList[i].Name == name {
 
 			apiURL, downloadURL, err := getURLs(newURL)
 			if err != nil {
-				return watchList, fmt.Errorf("changeRepoURL: %v", err)
+				return fmt.Errorf("changeRepoURL: %w", err)
 			}
 
-			watchList[i].URL = newURL
+			w.WatchList[i].URL = newURL
 			lastModified := time.Now()
-			watchList[i].Stats.Meta.LastModifiedAt = &lastModified
-			watchList[i].APIURL = apiURL
-			watchList[i].DownloadURL = downloadURL
+			w.WatchList[i].Stats.Meta.LastModifiedAt = &lastModified
+			w.WatchList[i].APIURL = apiURL
+			w.WatchList[i].DownloadURL = downloadURL
 			updated = true
 			break
 		}
 	}
 
 	if !updated {
-		return nil, fmt.Errorf("Lighthouse - UpdateRepo: Unable to change the URL of " + name + ". Does not exist.")
+		return fmt.Errorf("changeRepoURL: " + name + " does not exist.")
 	}
 
-	storeWatchList(watchList)
+	w.storeWatchList()
 
-	return watchList, nil
+	return nil
 }
 
 //Helper Functions
 
 // Returns a boolean if repo exists
-func repoExists(watchList []models.WatchedRepo, newRepoName string, newRepoURL string) (bool, string, string) {
+func (w *Watcher) repoExists(newRepoName string, newRepoURL string) (bool, string, string) {
 
-	for _, existingRepo := range watchList {
+	for _, existingRepo := range w.WatchList {
 		if existingRepo.URL == newRepoURL {
 			return true, "URL", existingRepo.URL
 		}
@@ -142,9 +136,9 @@ func repoExists(watchList []models.WatchedRepo, newRepoName string, newRepoURL s
 
 }
 
-func checkNamingConflicts(name string, currentName string, watchList []models.WatchedRepo) bool {
+func (w *Watcher) checkNamingConflicts(name string, currentName string) bool {
 
-	for _, repo := range watchList {
+	for _, repo := range w.WatchList {
 		if repo.Name == name && repo.Name != currentName {
 			return true
 		}
@@ -153,9 +147,9 @@ func checkNamingConflicts(name string, currentName string, watchList []models.Wa
 	return false
 }
 
-func checkURLConflicts(name string, currentURL string, watchList []models.WatchedRepo) bool {
+func (w *Watcher) checkURLConflicts(name string, currentURL string) bool {
 
-	for _, repo := range watchList {
+	for _, repo := range w.WatchList {
 		if repo.URL == currentURL && repo.Name != name {
 			return true
 		}
@@ -164,29 +158,30 @@ func checkURLConflicts(name string, currentURL string, watchList []models.Watche
 	return false
 }
 
-func readWatchList() []models.WatchedRepo {
+func (w *Watcher) loadWatchList() error {
 	var watchList []models.WatchedRepo
 
 	//read json file
 	data, err := os.ReadFile("config/repos.json")
 	if err != nil {
 		fmt.Println("Watcher - LoadWatchList: Failed to load repos.json")
-		fmt.Println(err)
+		return fmt.Errorf("loadWatchList: %w", err)
 	}
 
 	//Unmarshal repos.json into watchList
 	err = json.Unmarshal([]byte(data), &watchList)
 	if err != nil {
 		fmt.Println("Watcher - LoadWatchList: Failed to Unmarshal json into WatchedRepos.")
-		fmt.Println(err)
+		return fmt.Errorf("loadWatchList: %w", err)
 	}
 
-	return watchList
+	w.WatchList = watchList
+	return nil
 }
 
-func storeWatchList(watchList []models.WatchedRepo) {
+func (w *Watcher) storeWatchList() {
 
-	updatedData, err := json.MarshalIndent(watchList, "", "	")
+	updatedData, err := json.MarshalIndent(w.WatchList, "", "	")
 	if err != nil {
 		fmt.Println("Watcher - storeWatchList: Failed to Marhsal json into UpdatedData.")
 		return
@@ -200,12 +195,12 @@ func storeWatchList(watchList []models.WatchedRepo) {
 }
 
 // Display WatchList in a nice format
-func DisplayWatchList() {
+func (w *Watcher) DisplayWatchList() {
 
 	fmt.Printf("%-20s | %-40s | %-20s | %-15s\n", "Name", "URL", "Started Watching", "Query Count")
 	fmt.Println(strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 40) + "-+-" + strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 15))
 
-	for _, repo := range WatchList {
+	for _, repo := range w.WatchList {
 		fmt.Printf(
 			"%-20s | %-40s | %-20s | %-15d \n",
 			repo.Name,

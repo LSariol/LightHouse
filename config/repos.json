@@ -10,26 +10,26 @@
 				"lastModifiedAt": null
 			},
 			"queries": {
-				"lastQueriedAt": "2025-10-01T15:38:54.9266695-04:00",
-				"queryCount": 120,
-				"lastErrorAt": null,
-				"lastErrorMessage": null
+				"lastQueriedAt": "2025-10-06T12:04:35.8717513-04:00",
+				"queryCount": 207,
+				"lastErrorAt": "2025-10-06T11:52:26.6415913-04:00",
+				"lastErrorMessage": "GitHub API Error: 401 Unauthorized"
 			},
 			"updates": {
-				"lastUpdatedAt": "2025-08-05T12:15:09.1394149-04:00",
-				"lastSeenCommitSha": "2827a7556a3a50e06ebd3d69ab83f00ee57137ef",
+				"lastUpdatedAt": "2025-10-06T11:54:52.9360076-04:00",
+				"lastSeenCommitSha": "008384e02501aa8a77fe7948a7df289acb190f8d",
 				"lastSeenTag": null,
-				"updateCount": 2
+				"updateCount": 4
 			},
 			"builds": {
-				"lastBuildAt": "2025-08-05T12:15:13.5224425-04:00",
+				"lastBuildAt": "2025-10-06T11:55:04.6847591-04:00",
 				"lastBuildStatus": "Success",
-				"buildTriggeredCount": 2
+				"buildTriggeredCount": 4
 			},
 			"downloads": {
-				"lastDownloadAt": "2025-08-05T12:15:09.4302775-04:00",
+				"lastDownloadAt": "2025-10-06T11:54:53.3894556-04:00",
 				"lastDownloadStatus": "Success",
-				"downloadTriggeredCount": 2
+				"downloadTriggeredCount": 4
 			}
 		}
 	}

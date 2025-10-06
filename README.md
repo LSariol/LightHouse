@@ -22,3 +22,7 @@ Ideal for homelab enthusiasts, solo developers, or internal tools where speed an
 
 ## To Do
 - Add a self updater
+
+were working on the docker container building and starting
+
+wtf is toolchain and wtf is toolchain=local

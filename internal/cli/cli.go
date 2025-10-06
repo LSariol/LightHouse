@@ -7,10 +7,21 @@ import (
 	"strings"
 
 	"github.com/LSariol/LightHouse/internal/builder"
-	"github.com/LSariol/LightHouse/internal/scanner"
+	"github.com/LSariol/LightHouse/internal/watcher"
 )
 
-func StartCLI() {
+type CLI struct {
+	Watcher *watcher.Watcher
+}
+
+func NewCLI(w *watcher.Watcher) *CLI {
+
+	return &CLI{
+		Watcher: w,
+	}
+}
+
+func (c *CLI) Run() {
 
 	ioScanner := bufio.NewScanner(os.Stdin)
 
@@ -20,11 +31,11 @@ func StartCLI() {
 			break
 		}
 		input := ioScanner.Text()
-		parseCLI(strings.Fields(input))
+		c.parseCLI(strings.Fields(input))
 	}
 }
 
-func parseCLI(args []string) {
+func (c *CLI) parseCLI(args []string) {
 
 	if len(args) == 0 {
 		return
@@ -44,9 +55,9 @@ func parseCLI(args []string) {
 		}
 
 	case "scan", "SCAN", "s", "S":
-		scanner.Scan()
+		c.Watcher.Scan()
 	case "list", "LIST", "l", "L":
-		scanner.DisplayWatchList()
+		c.Watcher.DisplayWatchList()
 
 	case "exit", "quit", "q":
 
@@ -59,7 +70,7 @@ func parseCLI(args []string) {
 		switch args[1] {
 		case "all", "a":
 			fmt.Println("Shutting down Lighthouse and all containers...")
-			if err := builder.StopAllContainers(scanner.WatchList); err != nil {
+			if err := builder.StopAllContainers(c.Watcher.WatchList); err != nil {
 				fmt.Printf("Error while shutting down containers: %v", err)
 			}
 			os.Exit(0)
