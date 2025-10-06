@@ -12,9 +12,9 @@ import (
 	"github.com/LSariol/LightHouse/internal/builder"
 	"github.com/LSariol/LightHouse/internal/cli"
 	"github.com/LSariol/LightHouse/internal/config"
-	"github.com/LSariol/LightHouse/internal/docker"
 	"github.com/LSariol/LightHouse/internal/watcher"
 	"github.com/LSariol/coveclient"
+	dockerclient "github.com/docker/docker/client"
 )
 
 func main() {
@@ -37,19 +37,28 @@ func main() {
 		Timeout:   10 * time.Second,
 	}
 
-	dockerHandler, err := docker.NewHandler()
-	if err != nil {
-		log.Panic(err)
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	var builder *builder.Builder = builder.NewBuilder(dockerHandler)
+	dockerClient, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+
+	var builder *builder.Builder = builder.NewBuilder(dockerClient, ctx)
 
 	var watcher *watcher.Watcher = watcher.NewWatcher(coveClient, client, builder, ctx)
 
 	go watcher.Run()
+
+	ok, err := builder.IsContainerRunning("cove")
+	if err != nil {
+		panic(err)
+	}
+
+	if !ok {
+		builder.StartContainer("cove")
+	}
 
 	//__________________________________________________________
 

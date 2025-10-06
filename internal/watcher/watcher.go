@@ -57,7 +57,7 @@ func (w *Watcher) Scan() error {
 
 	for i, repo := range w.WatchList {
 		repo = w.WatchList[i]
-		currentHash, err := getLatestSHA(repo.APIURL, w.GitToken)
+		currentHash, err := w.getLatestSHA(repo.APIURL, w.GitToken)
 		if err != nil {
 
 			repo = models.UpdateErrorStats(repo, err.Error())
@@ -71,7 +71,7 @@ func (w *Watcher) Scan() error {
 		if repo.Stats.Updates.LastSeenCommitSha == nil || *repo.Stats.Updates.LastSeenCommitSha != currentHash {
 
 			repo = models.UpdateUpdateStats(repo, currentHash)
-			repo, err = builder.Build(repo)
+			err := w.Builder.Build(repo)
 			if err != nil {
 				builder.ErrorHandler()
 				return fmt.Errorf("scanner.scan() - error in build: %v", err)

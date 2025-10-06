@@ -1,3 +1,4 @@
 .env
 /Server
 RawGitResponse.json
+config/repos.json

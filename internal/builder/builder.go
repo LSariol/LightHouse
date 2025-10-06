@@ -1,32 +1,30 @@
 package builder
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/LSariol/LightHouse/internal/docker"
 	"github.com/LSariol/LightHouse/internal/models"
+	"github.com/docker/docker/client"
 )
 
 type Builder struct {
-	Paths         Paths
-	DockerHandler *docker.Handler
+	Docker    *client.Client
+	Ctx       context.Context
+	WatchList []models.WatchedRepo
+	BasePath  string
 }
 
-type Paths struct {
-	Original string
-	Download string
-	Staging  string
-}
-
-func NewBuilder(dh *docker.Handler) *Builder {
+func NewBuilder(dh *client.Client, ctx context.Context) *Builder {
 	return &Builder{
-		DockerHandler: dh,
+		Docker: dh,
+		Ctx:    ctx,
 	}
 }
 
-func Build(repo models.WatchedRepo) (models.WatchedRepo, error) {
+func (b *Builder) Build(repo models.WatchedRepo) error {
 
 	fmt.Println("----Building " + repo.Name + " ----")
 
@@ -34,49 +32,43 @@ func Build(repo models.WatchedRepo) (models.WatchedRepo, error) {
 	if err != nil {
 		wError := "Cleaning Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return repo, err
+		return err
 	}
 
 	// Prepare Repo for build
 	err = downloadNewCommit(repo.DownloadURL, repo.Name)
 	if err != nil {
 		wError := "Download Failed for " + repo.Name + " " + err.Error()
-		fmt.Println(wError)
-		return models.UpdateDownloadStats(repo, wError), err
+		return fmt.Errorf(wError)
 	}
-	repo = models.UpdateDownloadStats(repo, "Success")
 
-	fmt.Println(stopContainer(strings.ToLower(repo.Name)))
+	err = b.StopContainer(repo.Name)
+	if err != nil {
+		return fmt.Errorf("build failed to stop container: %w", err)
+	}
 
 	err = unpackNewProject(repo.Name)
 	if err != nil {
 		wError := "Unzip Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return repo, err
+		return err
 	}
 
-	err = buildDockerImage(strings.ToLower(repo.Name))
+	err = b.createContainer(strings.ToLower(repo.Name))
 	if err != nil {
-		return repo, err
-	}
-
-	repo = models.UpdateBuildStats(repo, "Success")
-
-	err = startDockerContainer(strings.ToLower(repo.Name))
-	if err != nil {
-		return repo, err
+		return err
 	}
 
 	err = cleanUp()
 	if err != nil {
 		wError := "Cleaning Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return repo, err
+		return err
 	}
 
 	fmt.Println("Clean Complete")
 
-	return repo, nil
+	return nil
 }
 
 func ErrorHandler() {
@@ -84,21 +76,21 @@ func ErrorHandler() {
 }
 
 // Run containers if they already exist.
-func InitilizeContainers(watchList []models.WatchedRepo) error {
+func (b *Builder) InitilizeContainers(watchList []models.WatchedRepo) error {
 
 	for _, model := range watchList {
 		// If container is running, good
 		containerName := strings.ToLower(model.Name)
-		status, err := getContainerStatus(containerName)
+		status, err := b.IsContainerRunning(containerName)
 		if err != nil {
 			return err
 		}
-		if status == "true" {
+		if status {
 			fmt.Println(containerName + " is already running.")
 			return nil
 		}
 
-		err = startDockerContainer(containerName)
+		err = b.StartContainer(containerName)
 		if err != nil {
 			return err
 		}
@@ -111,4 +103,11 @@ func InitilizeOriginalPath() string {
 	originalPath, _ := os.Getwd()
 
 	return originalPath
+}
+
+func (b *Builder) LoadPaths() error {
+
+	b.BasePath = os.Getenv("BASE_PATH")
+
+	return nil
 }

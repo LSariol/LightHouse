@@ -10,7 +10,9 @@ import (
 	"github.com/LSariol/LightHouse/internal/models"
 )
 
-func (w *Watcher) addNewRepo(name string, url string) error {
+func (w *Watcher) AddNewRepo(name string, url string) error {
+
+	name = strings.ToLower(name)
 
 	// Check if new repo is already being watched
 	exists, conflictVal, conflictType := w.repoExists(name, url)
@@ -176,6 +178,7 @@ func (w *Watcher) loadWatchList() error {
 	}
 
 	w.WatchList = watchList
+	w.Builder.WatchList = watchList
 	return nil
 }
 

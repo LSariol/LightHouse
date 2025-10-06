@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/LSariol/LightHouse/internal/builder"
 	"github.com/LSariol/LightHouse/internal/watcher"
 )
 
@@ -53,6 +52,19 @@ func (c *CLI) parseCLI(args []string) {
 			//do name update
 
 		}
+	case "add", "a":
+
+		if len(args) != 3 {
+			fmt.Println("add requires 3 total arguments.")
+			fmt.Println("add <repoName> <repoURL>")
+			return
+		}
+
+		err := c.Watcher.AddNewRepo(args[1], args[2])
+		if err != nil {
+			fmt.Printf("Failed adding new repo: %w\n", err)
+		}
+		fmt.Println("Watching Repo")
 
 	case "scan", "SCAN", "s", "S":
 		c.Watcher.Scan()
@@ -70,7 +82,7 @@ func (c *CLI) parseCLI(args []string) {
 		switch args[1] {
 		case "all", "a":
 			fmt.Println("Shutting down Lighthouse and all containers...")
-			if err := builder.StopAllContainers(c.Watcher.WatchList); err != nil {
+			if err := c.Watcher.Builder.StopAllContainers(); err != nil {
 				fmt.Printf("Error while shutting down containers: %v", err)
 			}
 			os.Exit(0)

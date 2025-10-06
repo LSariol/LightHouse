@@ -1,10 +1,7 @@
 package builder
 
 import (
-	"archive/tar"
 	"archive/zip"
-	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/LSariol/LightHouse/internal/models"
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/client"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/errdefs"
 )
 
 var DownloadPath = "C:/Users/Lu/Server/Download"
@@ -48,26 +45,6 @@ func downloadNewCommit(URL string, projectName string) error {
 		return err
 	}
 
-	return nil
-}
-
-func stopContainer(projectName string) error {
-
-	stopCMD := exec.Command("docker", "stop", projectName)
-	output, err := stopCMD.CombinedOutput()
-
-	if err != nil {
-		return fmt.Errorf("failed to stop container '%s': %v\nOutput: %s", projectName, err, string(output))
-	}
-
-	rmCMD := exec.Command("docker", "rm", projectName)
-	output, err = rmCMD.CombinedOutput()
-
-	if err != nil {
-		return fmt.Errorf("failed to remove container '%s': %v\nOutput: %s", projectName, err, string(output))
-	}
-
-	fmt.Printf("Container '%s' has stopped and has been successfully deleted.\n", projectName)
 	return nil
 }
 
@@ -122,90 +99,6 @@ func unpackNewProject(projectName string) error {
 	return nil
 }
 
-func buildDockerImage(projectName string) error {
-
-	ctx := context.Background()
-
-	buildPath := filepath.Join(StagingPath, projectName+"-main")
-
-	tarBuf := new(bytes.Buffer)
-	tw := tar.NewWriter(tarBuf)
-	err := filepath.Walk(buildPath, func(file string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// Open files for reading
-		if fi.Mode().IsRegular() {
-			relPath, err := filepath.Rel(buildPath, file)
-			if err != nil {
-				return err
-			}
-			header, err := tar.FileInfoHeader(fi, "")
-			if err != nil {
-				return err
-			}
-			header.Name = relPath
-
-			if err := tw.WriteHeader(header); err != nil {
-				return err
-			}
-
-			f, err := os.Open(file)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			if _, err := io.Copy(tw, f); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	if err != nil {
-		return fmt.Errorf("failed to create build tar: %v", err)
-	}
-
-	if err := tw.Close(); err != nil {
-		return err
-	}
-
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		return fmt.Errorf("failed to create docker client: %v", err)
-	}
-
-	buildOpts := types.ImageBuildOptions{
-		Tags:       []string{projectName},
-		Remove:     true,
-		Dockerfile: "Dockerfile",
-	}
-
-	buildResp, err := cli.ImageBuild(ctx, bytes.NewReader(tarBuf.Bytes()), buildOpts)
-	if err != nil {
-		return fmt.Errorf("failed to build docker image: %v", err)
-	}
-	defer buildResp.Body.Close()
-
-	_, err = io.Copy(os.Stdout, buildResp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read build response: %v", err)
-	}
-
-	fmt.Printf("Docker image for %s built successfully.\n", projectName)
-
-	return nil
-}
-
-func startDockerContainer(projectName string) error {
-	cmd := exec.Command("docker", "compose", "up", "-d", "--build", "--remove-orphans")
-	cmd.Dir = "C:/Users/Lu/Server/Staging/Cove-main" // <- relative paths in compose resolve here
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	return cmd.Run()
-}
-
 func cleanUp() error {
 
 	// Clean Staging Folder
@@ -231,24 +124,88 @@ func cleanUp() error {
 	return nil
 }
 
-func getContainerStatus(containerName string) (string, error) {
-
-	statusCMD := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", containerName)
-	output, err := statusCMD.CombinedOutput()
-	if err != nil {
-		return "false", nil
-	}
-
-	return strings.TrimSpace(string(output)), nil
+func (b *Builder) createContainer(projectName string) error {
+	cmd := exec.Command("docker", "compose", "up", "-d", "--build", "--remove-orphans")
+	cmd.Dir = "C:/Users/Lu/Server/Staging/Cove-main" // <- relative paths in compose resolve here
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	return cmd.Run()
 }
 
-func StopAllContainers(WatchList []models.WatchedRepo) error {
+func (b *Builder) StartContainer(name string) error {
+	return b.Docker.ContainerStart(b.Ctx, name, container.StartOptions{})
+}
 
-	for _, repo := range WatchList {
+func (b *Builder) StopContainer(name string) error {
+	return b.Docker.ContainerStop(b.Ctx, name, container.StopOptions{})
+}
 
-		projectName := strings.ToLower(repo.Name)
-		if err := stopContainer(projectName); err != nil {
-			return fmt.Errorf("error stopping %s: %v", projectName, err)
+func (b *Builder) RestartContainer(name string) error {
+	return b.Docker.ContainerRestart(b.Ctx, name, container.StopOptions{})
+}
+
+func (b *Builder) GetAllContainers() ([]types.Container, error) {
+
+	containers, err := b.Docker.ContainerList(b.Ctx, container.ListOptions{
+		All: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containers: %w", err)
+	}
+
+	return containers, nil
+}
+
+func (b *Builder) GetRunningContainers() ([]types.Container, error) {
+
+	containers, err := b.Docker.ContainerList(b.Ctx, container.ListOptions{
+		All: false,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list containers: %w", err)
+	}
+
+	return containers, nil
+}
+
+func (b *Builder) IsContainerRunning(nameOrId string) (bool, error) {
+
+	info, err := b.Docker.ContainerInspect(b.Ctx, nameOrId)
+	if err != nil {
+		if errdefs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("inspect %q: %w", nameOrId, err)
+	}
+
+	if info.State == nil {
+		return false, fmt.Errorf("no state for %q", nameOrId)
+	}
+
+	return info.State.Running, nil
+}
+
+func (b *Builder) StartAllContainers() error {
+
+	for _, repo := range b.WatchList {
+		name := strings.ToLower(repo.Name)
+
+		err := b.StartContainer(name)
+		if err != nil {
+			return fmt.Errorf("starting all containers: %s: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+func (b *Builder) StopAllContainers() error {
+
+	for _, repo := range b.WatchList {
+		name := strings.ToLower(repo.Name)
+
+		err := b.StopContainer(name)
+		if err != nil {
+			return fmt.Errorf("starting all containers: %s: %w", name, err)
 		}
 	}
 

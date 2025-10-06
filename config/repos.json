@@ -10,9 +10,9 @@
 				"lastModifiedAt": null
 			},
 			"queries": {
-				"lastQueriedAt": "2025-10-06T12:04:35.8717513-04:00",
-				"queryCount": 207,
-				"lastErrorAt": "2025-10-06T11:52:26.6415913-04:00",
+				"lastQueriedAt": "2025-10-06T15:48:28.6216448-04:00",
+				"queryCount": 980,
+				"lastErrorAt": "2025-10-06T15:28:46.2573386-04:00",
 				"lastErrorMessage": "GitHub API Error: 401 Unauthorized"
 			},
 			"updates": {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func getLatestSHA(URL string, PAT string) (string, error) {
+func (w *Watcher) getLatestSHA(URL string, PAT string) (string, error) {
 
 	req, err := http.NewRequest("GET", URL+"/commits", nil)
 	if err != nil {
@@ -18,7 +18,7 @@ func getLatestSHA(URL string, PAT string) (string, error) {
 	req.Header.Set("Authorization", "token "+PAT)
 	// req.Header.Set("Accept", "application/vdn.github+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := w.HTTP.Do(req)
 	if err != nil {
 		return "", err
 	}
