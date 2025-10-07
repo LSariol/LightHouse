@@ -72,7 +72,7 @@ func (c *CLI) parseCLI(args []string) {
 			fmt.Println("start <projectName/ALL>")
 			return
 		}
-		if args[2] == "ALL" || args[2] == "all" {
+		if args[1] == "ALL" || args[1] == "all" {
 			err := c.Watcher.Builder.StartAllContainers()
 			if err != nil {
 				fmt.Printf("Error starting all containers: %w\n", err)
@@ -82,9 +82,9 @@ func (c *CLI) parseCLI(args []string) {
 			return
 		}
 
-		err := c.Watcher.Builder.StartContainer(args[2])
+		err := c.Watcher.Builder.StartContainer(args[1])
 		if err != nil {
-			fmt.Printf("Error starting '%s': %w\n", args[2], err)
+			fmt.Printf("Error starting '%s': %w\n", args[1], err)
 			return
 		}
 		fmt.Println("%w has been started.")
@@ -96,7 +96,7 @@ func (c *CLI) parseCLI(args []string) {
 			fmt.Println("stop <projectName/ALL>")
 			return
 		}
-		if args[2] == "ALL" || args[2] == "all" {
+		if args[1] == "ALL" || args[1] == "all" {
 			err := c.Watcher.Builder.StopAllContainers()
 			if err != nil {
 				fmt.Printf("Error starting all containers: %w\n", err)
@@ -106,9 +106,9 @@ func (c *CLI) parseCLI(args []string) {
 			return
 		}
 
-		err := c.Watcher.Builder.StopContainer(args[2])
+		err := c.Watcher.Builder.StopContainer(args[1])
 		if err != nil {
-			fmt.Printf("Error stopping '%s': %w\n", args[2], err)
+			fmt.Printf("Error stopping '%s': %w\n", args[1], err)
 			return
 		}
 		fmt.Println("%w has been stopped.")
