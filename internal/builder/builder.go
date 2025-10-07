@@ -7,19 +7,22 @@ import (
 	"strings"
 
 	"github.com/LSariol/LightHouse/internal/models"
+	"github.com/LSariol/coveclient"
 	"github.com/docker/docker/client"
 )
 
 type Builder struct {
 	Docker    *client.Client
+	CC        *coveclient.Client
 	Ctx       context.Context
 	WatchList []models.WatchedRepo
 	BasePath  string
 }
 
-func NewBuilder(dh *client.Client, ctx context.Context) *Builder {
+func NewBuilder(dh *client.Client, cc *coveclient.Client, ctx context.Context) *Builder {
 	return &Builder{
 		Docker: dh,
+		CC:     cc,
 		Ctx:    ctx,
 	}
 }

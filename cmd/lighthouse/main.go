@@ -53,7 +53,7 @@ func main() {
 		panic(err)
 	}
 
-	var builder *builder.Builder = builder.NewBuilder(dockerClient, ctx)
+	var builder *builder.Builder = builder.NewBuilder(dockerClient, coveClient, ctx)
 	var watcher *watcher.Watcher = watcher.NewWatcher(coveClient, client, builder, ctx)
 
 	go watcher.Run()

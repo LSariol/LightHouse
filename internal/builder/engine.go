@@ -143,9 +143,20 @@ func cleanupAll(base string) error {
 }
 
 func (b *Builder) createContainer(projectName string) error {
+
 	cmd := exec.Command("docker", "compose", "up", "-d", "--build", "--remove-orphans")
 	cmd.Dir = os.Getenv("STAGING_PATH") + projectName + "-main" // <- relative paths in compose resolve here
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+
+	if projectName == "cloudflared" {
+		token, err := b.CC.GetSecret("CLOUDFLARE_TUNNEL_TOKEN")
+		if err != nil {
+			return err
+		}
+
+		cmd.Env = append(os.Environ(), "TUNNEL_TOKEN="+token)
+	}
+
 	return cmd.Run()
 }
 
