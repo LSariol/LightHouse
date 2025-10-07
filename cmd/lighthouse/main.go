@@ -56,6 +56,8 @@ func main() {
 	var builder *builder.Builder = builder.NewBuilder(dockerClient, coveClient, ctx)
 	var watcher *watcher.Watcher = watcher.NewWatcher(coveClient, client, builder, ctx)
 
+	builder.StartAllContainers()
+
 	go watcher.Run()
 
 	ok, err := builder.IsContainerRunning("cove")
