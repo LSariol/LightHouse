@@ -22,7 +22,7 @@ func Load() (string, error) {
 func SaveClientSecret(envPath string, clientSecret string) error {
 
 	var myEnv map[string]string
-	myEnv, err := godotenv.Read()
+	myEnv, err := godotenv.Read(envPath)
 	if err != nil {
 		return fmt.Errorf("unable to read .env file for save")
 	}
