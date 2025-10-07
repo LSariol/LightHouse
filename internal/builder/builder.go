@@ -32,38 +32,45 @@ func (b *Builder) Build(repo models.WatchedRepo) error {
 	if err != nil {
 		wError := "Cleaning Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return err
+		return fmt.Errorf("cleanup: %w", err)
 	}
 
 	// Prepare Repo for build
 	err = downloadNewCommit(repo.DownloadURL, repo.Name)
 	if err != nil {
 		wError := "Download Failed for " + repo.Name + " " + err.Error()
-		return fmt.Errorf(wError)
+		fmt.Println(wError)
+		return fmt.Errorf("download: %w", err)
 	}
 
 	err = b.StopContainer(repo.Name)
 	if err != nil {
-		return fmt.Errorf("build failed to stop container: %w", err)
+		if strings.Contains(err.Error(), "No such container") {
+			// ignore and continue
+		} else {
+			// propagate other errors
+			return fmt.Errorf("build failed to stop container: %w", err)
+		}
+
 	}
 
 	err = unpackNewProject(repo.Name)
 	if err != nil {
 		wError := "Unzip Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return err
+		return fmt.Errorf("unpack: %w", err)
 	}
 
 	err = b.createContainer(strings.ToLower(repo.Name))
 	if err != nil {
-		return err
+		return fmt.Errorf("create container: %w", err)
 	}
 
 	err = cleanUp()
 	if err != nil {
 		wError := "Cleaning Failed for " + repo.Name + " " + err.Error()
 		fmt.Println(wError)
-		return err
+		return fmt.Errorf("cleanup end: %w", err)
 	}
 
 	fmt.Println("Clean Complete")

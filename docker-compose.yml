@@ -1,26 +1,42 @@
 name: lighthouse
 
 services:
-  cove:
+  lighthouse:
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
     build:                      
       context: .
       dockerfile: Dockerfile
-      environment:
-        - COVE_PORT=2100
     container_name: lighthouse
+    environment:
+      - COVE_ADDRESS=http://host.docker.internal:2100
+      - STAGING_PATH=/app/server/staging/
+      - DOWNLOAD_PATH=/app/server/download/
+      - APP_ENV_PATH=/app/vault/.env
+      - APP_REPO_PATH=/app/vault/repos.json
     ports:
       - "2000:2000"
     volumes:
       - type: bind
-        source: C:/Users/Lu/Server/Storage/lighthouse/.env
+        source: /srv/server/storage/lighthouse/.env
         target: /app/vault/.env
         read_only: true
+      - type: bind
+        source: /srv/server/storage/lighthouse/repos.json
+        target: /app/vault/repos.json
+        read_only: false
+      - type: bind
+        source: /srv/server/staging/
+        target: /app/server/staging/
+        read_only: false
+      - type: bind
+        source: /srv/server/download/
+        target: /app/server/download/
+        read_only: false
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: false
     stdin_open: true  # keeps STD open for the CLI
     tty: true         # allocates a pseudo-TTY so you can interact
     restart: unless-stopped
-    # healthcheck:
-    #   test: ["CMD", "wget", "-qO-", "http://localhost:2000/health"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 10
-    #   start_period: 5s

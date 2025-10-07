@@ -164,7 +164,7 @@ func (w *Watcher) loadWatchList() error {
 	var watchList []models.WatchedRepo
 
 	//read json file
-	data, err := os.ReadFile("config/repos.json")
+	data, err := os.ReadFile(os.Getenv("APP_REPO_PATH"))
 	if err != nil {
 		fmt.Println("Watcher - LoadWatchList: Failed to load repos.json")
 		return fmt.Errorf("loadWatchList: %w", err)
@@ -190,7 +190,7 @@ func (w *Watcher) storeWatchList() {
 		return
 	}
 
-	err = os.WriteFile("config/repos.json", updatedData, 0644)
+	err = os.WriteFile(os.Getenv("APP_REPO_PATH"), updatedData, 0644)
 	if err != nil {
 		fmt.Println("Watcher - storeWatchList: Failed to write to repos.json." + err.Error())
 		return

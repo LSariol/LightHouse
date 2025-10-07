@@ -9,11 +9,15 @@ import (
 
 func (w *Watcher) loadGitCredentials() error {
 
+	fmt.Println("Getting GITHUB PAT")
+
 	gitToken, err := w.CC.GetSecret("LIGHTHOUSE_GITHUB_PAT")
 	if err != nil {
+		fmt.Println(err)
 		return fmt.Errorf("loadGitCredentials: %v", err)
 	}
 
+	fmt.Println("GOT TOKEN")
 	w.GitToken = gitToken
 	return nil
 }
@@ -21,7 +25,7 @@ func (w *Watcher) loadGitCredentials() error {
 func NewCoveClient() *coveclient.Client {
 
 	clientSecret := os.Getenv("COVE_CLIENT_SECRET")
-	var coveClient *coveclient.Client = coveclient.New("http://localhost:"+os.Getenv("COVE_PORT"), clientSecret)
+	var coveClient *coveclient.Client = coveclient.New(os.Getenv("COVE_ADDRESS"), clientSecret)
 
 	if clientSecret == "" {
 		clientSecret, err := coveClient.Bootstrap()

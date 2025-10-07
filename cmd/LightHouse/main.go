@@ -46,7 +46,6 @@ func main() {
 	}
 
 	var builder *builder.Builder = builder.NewBuilder(dockerClient, ctx)
-
 	var watcher *watcher.Watcher = watcher.NewWatcher(coveClient, client, builder, ctx)
 
 	go watcher.Run()
