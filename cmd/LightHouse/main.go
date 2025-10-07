@@ -19,12 +19,16 @@ import (
 
 func main() {
 
-	if err := config.Load(); err != nil {
+	var envPath string = ""
+	envPath, err := config.Load()
+	if err != nil {
 		panic(err)
 	}
 
 	// Build Dependencies
 	var coveClient *coveclient.Client = watcher.NewCoveClient()
+
+	config.SaveClientSecret(envPath, coveClient.ClientSecret)
 
 	tr := &http.Transport{
 		MaxIdleConns:        100,

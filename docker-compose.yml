@@ -20,7 +20,7 @@ services:
       - type: bind
         source: /srv/server/storage/lighthouse/.env
         target: /app/vault/.env
-        read_only: true
+        read_only: false
       - type: bind
         source: /srv/server/storage/lighthouse/repos.json
         target: /app/vault/repos.json
