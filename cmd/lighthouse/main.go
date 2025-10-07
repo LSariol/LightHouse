@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +20,7 @@ import (
 
 func main() {
 
-	var envPath string = ""
+	var envPath string
 	envPath, err := config.Load()
 	if err != nil {
 		panic(err)
@@ -27,8 +28,11 @@ func main() {
 
 	// Build Dependencies
 	var coveClient *coveclient.Client = watcher.NewCoveClient()
+	fmt.Println(coveClient.ClientSecret)
 
-	config.SaveClientSecret(envPath, coveClient.ClientSecret)
+	if err := config.SaveClientSecret(envPath, coveClient.ClientSecret); err != nil {
+		panic(err)
+	}
 
 	tr := &http.Transport{
 		MaxIdleConns:        100,
