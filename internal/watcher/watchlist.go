@@ -36,7 +36,7 @@ func (w *Watcher) AddNewRepo(name string, url string) error {
 
 }
 
-func (w *Watcher) removeRepo(toRemove string) {
+func (w *Watcher) RemoveRepo(toRemove string) error {
 
 	indexToRemove := -1
 
@@ -49,17 +49,16 @@ func (w *Watcher) removeRepo(toRemove string) {
 
 	if indexToRemove != -1 {
 		w.WatchList = append(w.WatchList[:indexToRemove], w.WatchList[indexToRemove+1:]...)
-		fmt.Println("Watcher - RemoveFromWatchList: " + toRemove + " has been removed.")
+		fmt.Printf("%s has been removed from the watchlist.\n", toRemove)
 		w.storeWatchList()
-		return
+		return nil
 	}
 
-	fmt.Println("Watcher - RemoveFromWatchList: Unable to remove " + toRemove + ".")
-	return
+	return fmt.Errorf("unable to remove %s from watchlist", toRemove)
 
 }
 
-func (w *Watcher) changeRepoName(currentName string, name string) error {
+func (w *Watcher) ChangeRepoName(currentName string, name string) error {
 	updated := false
 
 	if w.checkNamingConflicts(name, currentName) {
@@ -85,7 +84,7 @@ func (w *Watcher) changeRepoName(currentName string, name string) error {
 	return nil
 }
 
-func (w *Watcher) changeRepoURL(name string, newURL string) error {
+func (w *Watcher) ChangeRepoURL(name string, newURL string) error {
 	updated := false
 
 	if w.checkURLConflicts(name, newURL) {

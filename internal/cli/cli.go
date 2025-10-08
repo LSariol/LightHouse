@@ -66,6 +66,47 @@ func (c *CLI) parseCLI(args []string) {
 		}
 		fmt.Println("Watching Repo")
 
+	case "remove", "r":
+
+		if len(args) != 2 {
+			fmt.Println("remove requires 2 total arguments.")
+			fmt.Println("remove <repoName>")
+			return
+		}
+
+		err := c.Watcher.RemoveRepo(args[1])
+		if err != nil {
+			fmt.Printf("Failed removing repo: %w\n", err)
+		}
+
+	case "change", "c":
+
+		if len(args) != 4 {
+			fmt.Println("remove requires 4 total arguments.")
+			fmt.Println("change <name or url> <old> <new>")
+			return
+		}
+
+		if strings.ToLower(args[1]) == "name" {
+			err := c.Watcher.ChangeRepoName(args[2], args[3])
+			if err != nil {
+				fmt.Printf("Failed changing repo name for %s: %w\n", args[2], err)
+			}
+
+			fmt.Println("Name has been changed.")
+			return
+		}
+
+		if strings.ToLower(args[1]) == "name" {
+			err := c.Watcher.ChangeRepoURL(args[2], args[3])
+			if err != nil {
+				fmt.Printf("Failed changing repo name for %s: %w\n", args[2], err)
+			}
+
+			fmt.Println("URL has been changed.")
+			return
+		}
+
 	case "start", "START":
 		if len(args) != 2 {
 			fmt.Println("start requires 2 total arguments.")
