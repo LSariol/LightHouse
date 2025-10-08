@@ -8,6 +8,7 @@
       "mode": "auto",
       "program": "${workspaceFolder}/cmd/lighthouse/main.go",  // your main package
       "cwd": "${workspaceFolder}",                          // 👈 force working dir = repo root
+      "console": "externalTerminal",   // 👈 use terminal for stdin/stdout
       "env": {
         "ENVIRONMENT": "dev"
       }

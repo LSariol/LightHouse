@@ -172,7 +172,7 @@ func (b *Builder) createContainer(projectName string) error {
 		if err != nil {
 			return err
 		}
-		cmd.Env = append(os.Environ(), "POSTGRES_DB="+pg_db, "POSTGRES_USER="+pg_user, "POSTGRES_PASSWORD"+pg_password)
+		cmd.Env = append(os.Environ(), "POSTGRES_DB="+pg_db, "POSTGRES_USER="+pg_user, "POSTGRES_PASSWORD="+pg_password)
 	}
 
 	return cmd.Run()
