@@ -157,6 +157,24 @@ func (b *Builder) createContainer(projectName string) error {
 		cmd.Env = append(os.Environ(), "TUNNEL_TOKEN="+token)
 	}
 
+	if projectName == "postgresDB" {
+		pg_db, err := b.CC.GetSecret("PG_DB")
+		if err != nil {
+			return err
+		}
+
+		pg_user, err := b.CC.GetSecret("PG_USER")
+		if err != nil {
+			return err
+		}
+
+		pg_password, err := b.CC.GetSecret("PG_PASSWORD")
+		if err != nil {
+			return err
+		}
+		cmd.Env = append(os.Environ(), "PG_DB="+pg_db, "PG_USER="+pg_user, "PG_PASSWORD"+pg_password)
+	}
+
 	return cmd.Run()
 }
 

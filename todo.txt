@@ -29,6 +29,7 @@ Fix Logging to be a Function Wrapper
 
 
 
+Add a 'broken' value to a repository im watching. if it doesnt build after 3 attempts, mark it as broken and wait for a new version to be found
 
 
 REFACTOR *****
