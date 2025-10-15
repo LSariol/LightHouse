@@ -2,7 +2,7 @@ module github.com/LSariol/LightHouse
 
 go 1.25.1
 
-require github.com/LSariol/coveclient v0.0.7
+require github.com/LSariol/coveclient v0.1.0
 
 require github.com/joho/godotenv v1.5.1
 
