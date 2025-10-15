@@ -2,14 +2,12 @@ name: lighthouse
 
 services:
   lighthouse:
-    extra_hosts:
-    - "host.docker.internal:host-gateway"
     build:                      
       context: .
       dockerfile: Dockerfile
     container_name: lighthouse
     environment:
-      - COVE_ADDRESS=http://host.docker.internal:2100
+      - COVE_ADDRESS=http://cove:2100
       - STAGING_PATH=/app/server/staging/
       - DOWNLOAD_PATH=/app/server/download/
       - APP_ENV_PATH=/app/vault/.env
@@ -40,3 +38,9 @@ services:
     stdin_open: true  # keeps STD open for the CLI
     tty: true         # allocates a pseudo-TTY so you can interact
     restart: unless-stopped
+    networks: 
+      - spark
+
+networks:
+  spark:
+    external: true
