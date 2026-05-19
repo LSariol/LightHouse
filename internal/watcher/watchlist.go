@@ -243,15 +243,21 @@ func (w *Watcher) storeWatchList() {
 // Display WatchList in a nice format
 func (w *Watcher) DisplayWatchList() {
 
-	fmt.Printf("%-20s | %-40s | %-20s | %-15s\n", "Name", "URL", "Started Watching", "Query Count")
-	fmt.Println(strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 40) + "-+-" + strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 15))
+	fmt.Printf("%-20s | %-40s | %-20s | %-20s | %-10s\n",
+		"Name", "URL", "Started Watching", "Last Updated", "Queries")
+	fmt.Println(strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 40) + "-+-" +
+		strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 20) + "-+-" + strings.Repeat("-", 10))
 
 	for _, repo := range w.WatchList {
-		fmt.Printf(
-			"%-20s | %-40s | %-20s | %-15d \n",
+		lastUpdated := "Never"
+		if repo.Stats.Updates.LastUpdatedAt != nil {
+			lastUpdated = repo.Stats.Updates.LastUpdatedAt.Format("2006-01-02 15:04")
+		}
+		fmt.Printf("%-20s | %-40s | %-20s | %-20s | %-10d\n",
 			repo.DisplayName,
 			repo.URL,
-			repo.Stats.Meta.StartedWatchingAt.Format("2006-01-02 15:04:05"),
+			repo.Stats.Meta.StartedWatchingAt.Format("2006-01-02 15:04"),
+			lastUpdated,
 			repo.Stats.Queries.QueryCount,
 		)
 	}

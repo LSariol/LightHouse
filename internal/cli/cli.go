@@ -63,7 +63,7 @@ func (c *CLI) parseCLI(args []string) {
 
 		err := c.Watcher.AddNewRepo(args[1], args[2])
 		if err != nil {
-			fmt.Printf("Failed adding new repo: %w\n", err)
+			fmt.Printf("Failed adding new repo: %v\n", err)
 		}
 		log.Printf("%s is now being watched.\n", args[1])
 
@@ -77,7 +77,7 @@ func (c *CLI) parseCLI(args []string) {
 
 		err := c.Watcher.RemoveRepo(args[1])
 		if err != nil {
-			fmt.Printf("Failed removing repo: %w\n", err)
+			fmt.Printf("Failed removing repo: %v\n", err)
 		}
 
 	case "change", "c":
@@ -98,7 +98,7 @@ func (c *CLI) parseCLI(args []string) {
 		if strings.ToLower(args[1]) == "name" {
 			err := c.Watcher.ChangeRepoName(args[2], args[3])
 			if err != nil {
-				fmt.Printf("Failed changing repo name for %s: %w\n", args[2], err)
+				fmt.Printf("Failed changing repo name for %s: %v\n", args[2], err)
 			}
 
 			fmt.Println("Name has been changed.")
@@ -114,7 +114,7 @@ func (c *CLI) parseCLI(args []string) {
 		if args[1] == "ALL" || args[1] == "all" {
 			err := c.Watcher.Builder.StartAllContainers()
 			if err != nil {
-				fmt.Printf("Error starting all containers: %w\n", err)
+				fmt.Printf("Error starting all containers: %v\n", err)
 				return
 			}
 			fmt.Println("All Containers Started")
@@ -123,10 +123,10 @@ func (c *CLI) parseCLI(args []string) {
 
 		err := c.Watcher.Builder.StartContainer(args[1])
 		if err != nil {
-			fmt.Printf("Error starting '%s': %w\n", args[1], err)
+			fmt.Printf("Error starting '%s': %v\n", args[1], err)
 			return
 		}
-		fmt.Println("%w has been started.")
+		fmt.Printf("%s has been started.\n", args[1])
 		return
 
 	case "stop", "STOP":
@@ -138,7 +138,7 @@ func (c *CLI) parseCLI(args []string) {
 		if args[1] == "ALL" || args[1] == "all" {
 			err := c.Watcher.Builder.StopAllContainers()
 			if err != nil {
-				fmt.Printf("Error starting all containers: %w\n", err)
+				fmt.Printf("Error stopping all containers: %v\n", err)
 				return
 			}
 			fmt.Println("All Containers stopped")
@@ -147,16 +147,20 @@ func (c *CLI) parseCLI(args []string) {
 
 		err := c.Watcher.Builder.StopContainer(args[1])
 		if err != nil {
-			fmt.Printf("Error stopping '%s': %w\n", args[1], err)
+			fmt.Printf("Error stopping '%s': %v\n", args[1], err)
 			return
 		}
-		fmt.Println("%w has been stopped.")
+		fmt.Printf("%s has been stopped.\n", args[1])
 		return
 
 	case "scan", "SCAN":
 		c.Watcher.Scan()
+
 	case "list", "LIST", "l", "L":
 		c.Watcher.DisplayWatchList()
+
+	case "help", "h":
+		printHelp()
 
 	case "exit", "quit", "q":
 
@@ -175,6 +179,9 @@ func (c *CLI) parseCLI(args []string) {
 			os.Exit(0)
 		}
 
+	default:
+		fmt.Printf("Unknown command: %q\n", args[0])
+		printHelp()
 	}
 
 	// 	case "get", "g":
@@ -258,16 +265,20 @@ func (c *CLI) parseCLI(args []string) {
 
 	// 	}
 	// }
+}
 
-	// func greenLog(s string) {
-	// 	fmt.Println("\033[32mCove CLI> " + s + "\033[0m")
-	// }
-
-	// func yellowLog(s string) {
-	// 	fmt.Println("\033[33mCove CLI> " + s + "\033[0m")
-	// }
-
-	// func redLog(s string) {
-	// 	fmt.Println("\033[31mCove CLI> " + s + "\033[0m")
-	// }
+func printHelp() {
+	fmt.Println()
+	fmt.Println("LightHouse CLI — available commands:")
+	fmt.Println()
+	fmt.Printf("  %-30s %s\n", "list  |  l", "List all watched repositories")
+	fmt.Printf("  %-30s %s\n", "add <name> <url>", "Add a GitHub repository to the watchlist")
+	fmt.Printf("  %-30s %s\n", "remove <name>", "Remove a repository from the watchlist")
+	fmt.Printf("  %-30s %s\n", "change <name> <new-url>", "Update a repository's URL")
+	fmt.Printf("  %-30s %s\n", "start <name|ALL>", "Start a container (or all containers)")
+	fmt.Printf("  %-30s %s\n", "stop <name|ALL>", "Stop a container (or all containers)")
+	fmt.Printf("  %-30s %s\n", "scan", "Manually trigger one scan cycle")
+	fmt.Printf("  %-30s %s\n", "help  |  h", "Show this help message")
+	fmt.Printf("  %-30s %s\n", "exit [all]", "Shut down LightHouse (exit all also stops containers)")
+	fmt.Println()
 }

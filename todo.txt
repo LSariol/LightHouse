@@ -18,6 +18,7 @@ Lighthouse
 	Start Watch loop for new updates
 	Start CLI
 	
+	Move to Database
 
 Need to update
 	container update
