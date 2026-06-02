@@ -151,6 +151,16 @@ func (w *Watcher) UpdateRepo(dName string, newURL string) error {
 	return nil
 }
 
+// FindRepo returns the WatchedRepo with the given display name and true if found.
+func (w *Watcher) FindRepo(name string) (models.WatchedRepo, bool) {
+	for _, repo := range w.WatchList {
+		if strings.EqualFold(repo.DisplayName, name) {
+			return repo, true
+		}
+	}
+	return models.WatchedRepo{}, false
+}
+
 //Helper Functions
 
 // Returns a boolean if repo exists

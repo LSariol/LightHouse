@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/LSariol/LightHouse/internal/builder"
@@ -19,7 +20,12 @@ type Watcher struct {
 	WatchList []models.WatchedRepo
 	HomePath  string
 	GitToken  string
+	paused    atomic.Bool
 }
+
+func (w *Watcher) Pause()  { w.paused.Store(true) }
+func (w *Watcher) Resume() { w.paused.Store(false) }
+func (w *Watcher) IsPaused() bool { return w.paused.Load() }
 
 func NewWatcher(cloveClient *coveclient.Client, http *http.Client, builder *builder.Builder, ctx context.Context) *Watcher {
 	return &Watcher{
@@ -44,8 +50,10 @@ func (w *Watcher) Run() error {
 
 	for {
 
-		if err := w.Scan(); err != nil {
-			fmt.Printf("ERROR IN SCAN: %v", err)
+		if !w.paused.Load() {
+			if err := w.Scan(); err != nil {
+				fmt.Printf("ERROR IN SCAN: %v", err)
+			}
 		}
 		time.Sleep(10 * time.Second)
 
